@@ -10,7 +10,6 @@ from matplotlib.colors import to_rgb, to_hex
 from plotly.subplots import make_subplots
 
 st.set_page_config(page_title="US Manufacturing Energy 2022", layout="wide")
-
 st.title("US Manufacturing Energy 2022")
 
 
@@ -45,27 +44,25 @@ def generate_distinct_colors(n, s=0.65, v=0.80):
 
 def build_figure1():
     file_url = "https://raw.githubusercontent.com/apatil210/LDRD/main/Figure1Data.xlsx"
+    base_color = "#474646"
+    light_factor = 0.001
+
     df = load_excel(file_url)
 
     required_columns = {"Category", "Data"}
     if not required_columns.issubset(df.columns):
-        st.error(f"Figure 1 is missing required columns: {required_columns}")
-        return None
-
-    base_color = "#474646"
-    light_factor = 0.001
+        raise ValueError(f"Figure 1 is missing required columns: {required_columns}")
 
     df_agg = (
         df.groupby("Category", as_index=False)["Data"]
-          .sum()
+        .sum()
     )
 
     df_agg = df_agg[df_agg["Data"] > 0].copy()
     df_agg = df_agg.sort_values("Data", ascending=False).reset_index(drop=True)
 
     if df_agg.empty:
-        st.warning("Figure 1 has no positive data.")
-        return None
+        raise ValueError("Figure 1 has no positive data values.")
 
     categories = df_agg["Category"]
     values = df_agg["Data"]
@@ -120,20 +117,18 @@ def build_figure2():
 
     required_columns = {"Category", "Data"}
     if not required_columns.issubset(df.columns):
-        st.error(f"Figure 2 is missing required columns: {required_columns}")
-        return None
+        raise ValueError(f"Figure 2 is missing required columns: {required_columns}")
 
     df_agg = (
         df.groupby("Category", as_index=False)["Data"]
-          .sum()
+        .sum()
     )
 
     df_agg = df_agg[df_agg["Data"] > 0].copy()
     df_agg = df_agg.sort_values("Data", ascending=False).reset_index(drop=True)
 
     if df_agg.empty:
-        st.warning("Figure 2 has no positive data.")
-        return None
+        raise ValueError("Figure 2 has no positive data values.")
 
     total = df_agg["Data"].sum()
     df_agg["Share_pct"] = 100 * df_agg["Data"] / total
@@ -182,25 +177,24 @@ def build_figure2():
 
 def build_figure3():
     file_url = "https://raw.githubusercontent.com/apatil210/LDRD/main/Figure3Data.xlsx"
+    value_cols = ["Electricity", "Fuel", "Steam"]
+
     df = load_excel(file_url)
 
-    value_cols = ["Electricity", "Fuel", "Steam"]
     required_columns = {"Category", "Electricity", "Fuel", "Steam"}
     if not required_columns.issubset(df.columns):
-        st.error(f"Figure 3 is missing required columns: {required_columns}")
-        return None
+        raise ValueError(f"Figure 3 is missing required columns: {required_columns}")
 
     df_agg = (
         df.groupby("Category", as_index=False)[value_cols]
-          .sum()
+        .sum()
     )
 
     df_agg["Category_clean"] = df_agg["Category"].astype(str).str.replace("_", " ", regex=False)
     df_agg = df_agg[(df_agg[value_cols] > 0).any(axis=1)].copy()
 
     if df_agg.empty:
-        st.warning("Figure 3 has no positive data.")
-        return None
+        raise ValueError("Figure 3 has no positive values.")
 
     base_palette = [
         "#A000FF", "#00D000", "#E00060", "#C6E000", "#C07030",
@@ -321,6 +315,14 @@ def build_figure3():
     return fig
 
 
+try:
+    fig1 = build_figure1()
+    fig2 = build_figure2()
+    fig3 = build_figure3()
+except Exception as e:
+    st.error(f"App error: {e}")
+    st.stop()
+
 tab1, tab2, tab3 = st.tabs([
     "Energy Summary 50+ US Industries",
     "Energy Classification: Unit Operations",
@@ -328,16 +330,10 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
-    fig1 = build_figure1()
-    if fig1 is not None:
-        st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(fig1, use_container_width=True, key="fig1")
 
 with tab2:
-    fig2 = build_figure2()
-    if fig2 is not None:
-        st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True, key="fig2")
 
 with tab3:
-    fig3 = build_figure3()
-    if fig3 is not None:
-        st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, use_container_width=True, key="fig3")
