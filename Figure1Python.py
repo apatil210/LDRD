@@ -73,7 +73,7 @@ fig.update_layout(
     margin=dict(t=40, b=40, l=60, r=30)
 )
 
-output_file = Path(r"C:\Users\apatil\Desktop\Energy-LDRD\Website\chart1.html").resolve().parent / "chart1.html"
-fig.write_html(output_file, full_html=True)
+# output_file = Path(r"C:\Users\apatil\Desktop\Energy-LDRD\Website\chart1.html").resolve().parent / "chart1.html"
+# fig.write_html(output_file, full_html=True)
 
-print("Saved to:", output_file)
+# print("Saved to:", output_file)
