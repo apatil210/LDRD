@@ -7,7 +7,7 @@ from pathlib import Path
 
 base_color = "#474646"
 light_factor = 0.001
-file_path = r"C:\Users\apatil\Desktop\Energy-LDRD\Website\Figure1Data.xlsx"
+file_path = r"https://github.com/apatil210/LDRD/blob/main/Figure1Data.xlsx"
 
 def make_shades(base_color, n, light_factor=0.25):
     rgb = np.array(to_rgb(base_color))
