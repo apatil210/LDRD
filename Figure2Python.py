@@ -4,7 +4,7 @@ import colorsys
 from pathlib import Path
 
 
-file_path = r"C:\Users\apatil\Desktop\Energy-LDRD\Website\Figure2Data.xlsx"
+file_path = r"https://github.com/apatil210/LDRD/blob/main/Figure2Data.xlsx"
 df = pd.read_excel(file_path)
 
 
