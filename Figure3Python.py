@@ -1,12 +1,52 @@
+import streamlit as st
 import pandas as pd
+import requests
+from io import BytesIO
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from pathlib import Path
 
-file_path = r"C:\Users\apatil\Desktop\Energy-LDRD\Website\Figure3Data.xlsx"
-df = pd.read_excel(file_path)
+st.set_page_config(page_title="Figure 3", layout="wide")
 
+file_url = "https://raw.githubusercontent.com/apatil210/LDRD/main/Figure3Data.xlsx"
 value_cols = ["Electricity", "Fuel", "Steam"]
+
+
+@st.cache_data
+def load_data(url):
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return pd.read_excel(BytesIO(response.content), engine="openpyxl")
+
+
+def make_labels(df_in, value_col):
+    total = df_in[value_col].sum()
+    out = df_in.copy()
+    out = out[out[value_col] > 0].copy()
+
+    if total > 0:
+        out["Share_pct"] = 100 * out[value_col] / total
+    else:
+        out["Share_pct"] = 0
+
+    out["Display_text"] = out.apply(
+        lambda r: f"<b>{r['Category_clean']}</b><br>{r['Share_pct']:.1f}%"
+        if r["Share_pct"] >= 1 else "",
+        axis=1
+    )
+    return out
+
+
+try:
+    df = load_data(file_url)
+except Exception as e:
+    st.error(f"Failed to load Excel file: {e}")
+    st.stop()
+
+required_columns = {"Category", "Electricity", "Fuel", "Steam"}
+if not required_columns.issubset(df.columns):
+    st.error(f"Excel file must contain these columns: {required_columns}")
+    st.write("Columns found:", list(df.columns))
+    st.stop()
 
 df_agg = (
     df.groupby("Category", as_index=False)[value_cols]
@@ -14,8 +54,11 @@ df_agg = (
 )
 
 df_agg["Category_clean"] = df_agg["Category"].astype(str).str.replace("_", " ", regex=False)
-
 df_agg = df_agg[(df_agg[value_cols] > 0).any(axis=1)].copy()
+
+if df_agg.empty:
+    st.warning("No positive values found for Electricity, Fuel, or Steam.")
+    st.stop()
 
 base_palette = [
     "#A000FF",
@@ -35,18 +78,6 @@ n_cat = len(categories)
 
 palette = (base_palette * ((n_cat // len(base_palette)) + 1))[:n_cat]
 color_map = dict(zip(categories, palette))
-
-def make_labels(df_in, value_col):
-    total = df_in[value_col].sum()
-    out = df_in.copy()
-    out = out[out[value_col] > 0].copy()
-    out["Share_pct"] = 100 * out[value_col] / total
-    out["Display_text"] = out.apply(
-        lambda r: f"<b>{r['Category_clean']}</b><br>{r['Share_pct']:.1f}%"
-        if r["Share_pct"] >= 1 else "",
-        axis=1
-    )
-    return out
 
 elec_df = make_labels(df_agg, "Electricity")
 fuel_df = make_labels(df_agg, "Fuel")
@@ -83,7 +114,8 @@ fig.add_trace(
         branchvalues="total",
         name="Electricity"
     ),
-    row=1, col=1
+    row=1,
+    col=1
 )
 
 fig.add_trace(
@@ -108,7 +140,8 @@ fig.add_trace(
         branchvalues="total",
         name="Fuel"
     ),
-    row=1, col=2
+    row=1,
+    col=2
 )
 
 fig.add_trace(
@@ -133,17 +166,16 @@ fig.add_trace(
         branchvalues="total",
         name="Steam"
     ),
-    row=1, col=3
+    row=1,
+    col=3
 )
 
 fig.update_layout(
     title=dict(text="Unit Operation Level 2", x=0.5),
     paper_bgcolor="white",
-    margin=dict(t=80, l=10, r=10, b=10)
+    margin=dict(t=80, l=10, r=10, b=10),
+    height=700
 )
 
-output_file = Path(r"C:\Users\apatil\Desktop\Energy-LDRD\Website\chart3.html")
-fig.write_html(str(output_file), full_html=True)
-
-print("Saved to:", output_file)
-print("File exists:", output_file.exists())
+st.title("Figure 3")
+st.plotly_chart(fig, use_container_width=True)
