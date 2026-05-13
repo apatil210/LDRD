@@ -315,18 +315,112 @@ def build_figure3():
     return fig
 
 
+def build_figure4():
+    df = pd.DataFrame({
+        "Category": [
+            "Food (311)",
+            "Beverage and Tobacco Products (312)",
+            "Wood Products (321)",
+            "Paper (322)",
+            "Petroleum and Coal Products (324)",
+            "Chemicals (325)",
+            "Nonmetallic Mineral Products (327)",
+            "Primary Metals (331)",
+            "Fabricated Metal Products (332)",
+            "Transportation Equipment (336)"
+        ],
+        "LDRD Coverage": [532, 58, 165, 1593, 3239, 1824, 465, 1228, 69, 75],
+        "Uncovered": [703, 207, 249, 410, 304, 2152, 701, 221, 356, 229],
+        "Pct LDRD Coverage": [43, 22, 40, 80, 91, 46, 40, 85, 16, 25],
+        "Total MECS 2022": [1235, 265, 414, 2003, 3543, 3976, 1166, 1449, 425, 304]
+    })
+
+    covered_text = [f"{v}%" if cov >= 120 else "" for v, cov in zip(df["Pct LDRD Coverage"], df["LDRD Coverage"])]
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Bar(
+            x=df["Category"],
+            y=df["LDRD Coverage"],
+            name="LDRD Coverage",
+            marker_color="#2E86AB",
+            text=covered_text,
+            textposition="inside",
+            textfont=dict(color="white", size=12),
+            customdata=np.stack(
+                [df["Pct LDRD Coverage"], df["Total MECS 2022"]],
+                axis=-1
+            ),
+            hovertemplate=(
+                "<b>%{x}</b><br>"
+                "LDRD Coverage: %{y:,}<br>"
+                "% LDRD Coverage: %{customdata[0]}%<br>"
+                "Total MECS 2022: %{customdata[1]:,}"
+                "<extra></extra>"
+            )
+        )
+    )
+
+    fig.add_trace(
+        go.Bar(
+            x=df["Category"],
+            y=df["Uncovered"],
+            name="Uncovered",
+            marker_color="#CFCFCF",
+            customdata=np.stack(
+                [df["Pct LDRD Coverage"], df["Total MECS 2022"]],
+                axis=-1
+            ),
+            hovertemplate=(
+                "<b>%{x}</b><br>"
+                "Uncovered: %{y:,}<br>"
+                "% LDRD Coverage: %{customdata[0]}%<br>"
+                "Total MECS 2022: %{customdata[1]:,}"
+                "<extra></extra>"
+            )
+        )
+    )
+
+    for i, total in enumerate(df["Total MECS 2022"]):
+        fig.add_annotation(
+            x=df["Category"][i],
+            y=total,
+            text=f"{total:,}",
+            showarrow=False,
+            yshift=14,
+            font=dict(size=11, color="black")
+        )
+
+    fig.update_layout(
+        title=dict(text="Total MECS 2022 with % LDRD Coverage", x=0.5),
+        barmode="stack",
+        xaxis=dict(title="", tickangle=45),
+        yaxis=dict(title="Total MECS 2022", gridcolor="rgba(0,0,0,0.1)"),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        legend=dict(orientation="h", y=1.08, x=0),
+        margin=dict(t=90, b=120, l=60, r=30),
+        height=700
+    )
+
+    return fig
+
+
 try:
     fig1 = build_figure1()
     fig2 = build_figure2()
     fig3 = build_figure3()
+    fig4 = build_figure4()
 except Exception as e:
     st.error(f"App error: {e}")
     st.stop()
 
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Energy Summary 50+ US Industries",
     "Energy Classification: Unit Operations",
-    "Energy Classification: Utility Source"
+    "Energy Classification: Utility Source",
+    "Energy Classification: NAICS"
 ])
 
 with tab1:
@@ -337,3 +431,6 @@ with tab2:
 
 with tab3:
     st.plotly_chart(fig3, use_container_width=True, key="fig3")
+
+with tab4:
+    st.plotly_chart(fig4, use_container_width=True, key="fig4")
